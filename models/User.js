@@ -1,24 +1,24 @@
 const mongoose = require('mongoose');
-const { isEmail } = require('validator')
+const { isEmail } = require('validator') 
 const bcrypt = require('bcrypt')
 
 
 const UserSchema = new mongoose.Schema({
         name: {
             type: String,
-            require: [true, "Can't be black"]
+            required: [true, "Can't be blank"]
         },
         email: {
             type: String,
             lowercase: true,
             unique: true,
-            require: [true, "Can't be black"],
+            required: [true, "Can't be black"],
             index: true, 
             validate: [isEmail, "invalid email"]
         },
         password: {
             type: String,
-            require: [true, "Can't be black"]
+            required: [true, "Can't be black"]
         },
         picture: {
             type: String,
@@ -35,6 +35,43 @@ const UserSchema = new mongoose.Schema({
 }, {minimize: false});
 
 
-const User = model.mongoose('User', UserSchema)
+UserSchema.pre('save', function(next){
+    const user = this;
+    if(!user.isModified('password')) return next();
+
+    bcrypt.genSalt(10, function(err, salt){
+        if(err) return next(err);
+
+        bcrypt.hash(user.password, salt, function(err, salt){
+            if(err) return next(err);
+
+            user.password = hash
+            next(); 
+        })
+
+
+    })
+})
+
+UserSchema.methods.toJSON = function() {
+    const user = this;
+    const userObject = user.toObject();
+    delete userObject.password;
+    return userObject;
+}
+
+UserSchema.static.findByCredentials = async function(email, password) {
+    const user = await User.findOne({email})
+    if(!user) throw new Error('Invalid email or password')
+
+    const isMatch = await bcrypt.compare(password, user.password)
+
+    if(!isMatch) throw new Error ('invalid email or password')
+
+    return user
+
+}
+
+const User = mongoose.model('User', UserSchema)
 
 module.exports = User

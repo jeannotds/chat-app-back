@@ -8,7 +8,7 @@ router.post('/', async(req, res) => {
         const {name, email, password, picture } = req.body
         console.log(req.body);
         const user = await User.create({name, email, password, picture});
-        res.status(210).json(user);
+        res.status(201).json(user);
     }
     catch(e){
         let msg;
@@ -22,3 +22,23 @@ router.post('/', async(req, res) => {
         res.status(400).json(msg)
     }
 })
+
+//Login User
+router.post('/login', async(req, res) => {
+    try{
+        const { email, password } = req.body;
+        const user = await User.findByCredentials(email, password);
+        user.status = "online"
+        await user.save();
+        res.status(200).json(user);
+    }
+    catch(e) {
+        res.status(404).json(e.message)
+    }
+})
+
+module.exports = router
+
+
+
+
